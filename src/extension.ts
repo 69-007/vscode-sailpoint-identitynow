@@ -33,6 +33,7 @@ import { ImportConfigPaletteCommand } from './commands/spconfig-import/ImportCon
 import { ImportConfigTreeViewCommand } from './commands/spconfig-import/ImportConfigTreeViewCommand';
 import { viewWorkflowExecutionHistory } from './commands/workflow/viewWorkflowExecutionHistory';
 import { UpdateWorkflowStatusCommand } from './commands/workflow/updateWorkflowStatusCommand';
+import { RunWorkflowCommand } from './commands/workflow/runWorkflowCommand';
 import { URL_PREFIX } from './constants';
 import { FileHandler } from './files/FileHandler';
 import { ISCResourceProvider } from './files/ISCResourceProvider';
@@ -329,6 +330,10 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.VIEW_WORKFLOW_EXECUTION_HISTORY,
 			viewWorkflowExecutionHistory));
+	const runWorkflowCommand = new RunWorkflowCommand(tenantService)
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.RUN_WORKFLOW,
+			runWorkflowCommand.run, runWorkflowCommand));
 	const workflowExportCommand = new WorkflowExportCommand()
 	context.subscriptions.push(
 		vscode.commands.registerCommand(commands.EXPORT_WORKFLOW,
