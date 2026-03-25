@@ -5,6 +5,7 @@ import { getWorkflowExecutionDetailUri } from '../../utils/UriUtils';
 import { openPreview } from '../../utils/vsCodeHelpers';
 import { TenantService } from '../../services/TenantService';
 import { validateTenantReadonly } from '../validateTenantReadonly';
+import { validateWorkflowJsonInput } from './utils';
 
 export class RunWorkflowCommand {
 
@@ -24,17 +25,7 @@ export class RunWorkflowCommand {
         const inputStr = await vscode.window.showInputBox({
             prompt: 'Enter JSON input for the workflow (leave empty for no input)',
             placeHolder: '{}',
-            validateInput: (value) => {
-                if (value === '') {
-                    return undefined;
-                }
-                try {
-                    JSON.parse(value);
-                    return undefined;
-                } catch {
-                    return 'Invalid JSON';
-                }
-            }
+            validateInput: validateWorkflowJsonInput
         });
 
         if (inputStr === undefined) {
