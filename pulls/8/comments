@@ -1,0 +1,9 @@
+Looks good to me 👍
+
+This is a clean and low-risk improvement to the CI pipeline. Adding the `unit test` step ensures that existing tests are actually executed before packaging/publishing, which greatly improves reliability. 🚀
+
+**Quick checks before merging:**
+- Confirm that `npm run test:unit` is properly defined in `package.json`.
+- Ensure that the tests run successfully in GitHub Actions without requiring additional dependencies (e.g., `xvfb` or VS Code runtime requirements).
+
+Assuming those are satisfied, this is a solid addition to the workflow. Great job on closing an important gap in the CI pipeline! 🌟

@@ -385,6 +385,11 @@
         "title": "View execution history..."
       },
       {
+        "command": "vscode-sailpoint-identitynow.workflow.run",
+        "title": "Run...",
+        "icon": "$(play)"
+      },
+      {
         "command": "vscode-sailpoint-identitynow.transform.evaluate",
         "title": "Evaluate locally..."
       },
@@ -887,6 +892,10 @@
           "when": "never"
         },
         {
+          "command": "vscode-sailpoint-identitynow.workflow.run",
+          "when": "never"
+        },
+        {
           "command": "vscode-sailpoint-identitynow.workflow.export",
           "when": "never"
         },
@@ -1352,6 +1361,11 @@
         },
         {
           "command": "vscode-sailpoint-identitynow.workflow.view-execution-history",
+          "when": "view == vscode-sailpoint-identitynow.view && viewItem =~ /workflow$/i",
+          "group": "workflow"
+        },
+        {
+          "command": "vscode-sailpoint-identitynow.workflow.run",
           "when": "view == vscode-sailpoint-identitynow.view && viewItem =~ /workflow$/i",
           "group": "workflow"
         },
