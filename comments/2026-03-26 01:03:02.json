@@ -1,0 +1,13 @@
+Strong direction overall.
+
+Adding unit tests to the pipeline is the right first step, but I’d recommend a follow-up hardening pass before treating this workflow as production-grade CI/CD.
+
+**Suggested next improvements:**
+- Switch from `npm install` to `npm ci` for reproducible CI installs.
+- Apply least-privilege `permissions` for the workflow/job token.
+- Pin third-party actions to full commit SHAs.
+- Add dependency review on pull requests.
+- Add CodeQL/code scanning for JavaScript.
+- Use `concurrency` to cancel outdated runs.
+
+That would turn this from a functional CI improvement into a much stronger supply-chain and pipeline security baseline.

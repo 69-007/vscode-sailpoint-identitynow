@@ -57,6 +57,7 @@ export const EXPORT_WORKFLOW = `${COMMAND_PREFIX}.workflow.export`;
 export const IMPORT_WORKFLOW = `${COMMAND_PREFIX}.workflow.import`;
 export const IMPORT_WORKFLOW_VIEW_ICON = `${COMMAND_PREFIX}.workflow.import.view-icon`;
 export const VIEW_WORKFLOW_EXECUTION_HISTORY = `${COMMAND_PREFIX}.workflow.view-execution-history`;
+export const RUN_WORKFLOW = `${COMMAND_PREFIX}.workflow.run`;
 export const EDIT_CONNECTOR_RULE = `${COMMAND_PREFIX}.connector-rule.edit`;
 export const NEW_CONNECTOR_RULE = `${COMMAND_PREFIX}.new-connector-rule`;
 export const UPLOAD_CONNECTOR_RULE = `${COMMAND_PREFIX}.connector-rule.upload`;
