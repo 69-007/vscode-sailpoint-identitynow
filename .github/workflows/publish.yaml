@@ -21,9 +21,6 @@ jobs:
     - name: Install the dependencies
       run: npm ci
 
-    - name: Run unit tests
-      run: npm run test:unit
-
     - name: Install vsce
       run: npm i -g @vscode/vsce
     - name: Run unit tests
