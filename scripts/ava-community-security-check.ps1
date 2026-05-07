@@ -20,7 +20,7 @@ $OutDir = Join-Path ([Environment]::GetFolderPath("Desktop")) "AVA_COMMUNITY_SEC
 $ReportHtml = Join-Path $OutDir "ava_community_security_report.html"
 $ReportTxt = Join-Path $OutDir "ava_community_security_report.txt"
 $ReportJson = Join-Path $OutDir "ava_community_security_report.json"
-$SuspiciousPowerShellFlags = @("-enc", "encodedcommand", "bypass", "downloadstring", "iex", "invoke-expression", "-nop", "hidden")
+$SuspiciousPowerShellFlags = @("-enc", "-encodedcommand", "-bypass", "-downloadstring", "iex", "invoke-expression", "-nop", "-noprofile", "-hidden")
 $RiskyPorts = @(21, 23, 135, 139, 445, 3389, 5985, 5986) # FTP, Telnet, RPC, NetBIOS, SMB, RDP, WinRM HTTP, WinRM HTTPS
 $PowerShellMetaPropertyNames = @("PSPath", "PSParentPath", "PSChildName", "PSDrive", "PSProvider")
 $CriticalPenalty = 25
@@ -140,7 +140,13 @@ try {
     }
 }
 catch {
-    Add-Result "Remote Zugriff" "INFO" "Remote Desktop" "Status konnte nicht gelesen werden" "Bei Bedarf manuell prüfen."
+    $rdpRecommendation = if ($_.Exception.Message -match "(?i)access.*denied|verweigert") {
+        "Leserechte auf HKLM fehlen. Skript bei Bedarf mit Adminrechten erneut ausführen."
+    }
+    else {
+        "Bei Bedarf manuell prüfen."
+    }
+    Add-Result "Remote Zugriff" "INFO" "Remote Desktop" "Status konnte nicht gelesen werden" $rdpRecommendation
 }
 
 try {
@@ -158,7 +164,8 @@ catch {}
 # LOKALE ADMINISTRATOREN
 # =========================
 try {
-    $admins = Get-LocalGroupMember -Group "Administrators" -ErrorAction Stop
+    $adminGroup = Get-LocalGroup -SID "S-1-5-32-544" -ErrorAction Stop
+    $admins = Get-LocalGroupMember -Group $adminGroup.Name -ErrorAction Stop
     foreach ($a in $admins) {
         Add-Result "Konten" "INFO" "Lokaler Administrator" `
             "$($a.Name) | $($a.ObjectClass)" `
