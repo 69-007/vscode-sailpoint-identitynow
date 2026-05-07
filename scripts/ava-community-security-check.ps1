@@ -51,7 +51,7 @@ function Add-Result {
         })
 }
 
-function HtmlEncode {
+function ConvertTo-HtmlEncodedString {
     param([string]$Text)
     if ($null -eq $Text) { return "" }
     return [System.Net.WebUtility]::HtmlEncode($Text)
@@ -186,7 +186,7 @@ try {
         if (Test-Path $path) {
             $items = Get-ItemProperty $path
             $props = $items.PSObject.Properties | Where-Object {
-                $_.Name -notmatch "^PS"
+                $_.Name -notin @("PSPath", "PSParentPath", "PSChildName", "PSDrive", "PSProvider")
             }
 
             foreach ($prop in $props) {
@@ -205,8 +205,8 @@ catch {
 # AUFFÄLLIGE POWERSHELL PROZESSE
 # =========================
 try {
-    $procs = Get-CimInstance Win32_Process | Where-Object {
-        $_.Name -in @("powershell.exe", "pwsh.exe") -and $_.ProcessId -ne $PID
+    $procs = Get-CimInstance Win32_Process -Filter "Name='powershell.exe' OR Name='pwsh.exe'" | Where-Object {
+        $_.ProcessId -ne $PID
     }
 
     foreach ($p in $procs) {
@@ -240,7 +240,7 @@ try {
     $connections = Get-NetTCPConnection -State Established -ErrorAction Stop
 
     foreach ($c in $connections) {
-        if ($RiskyPorts -contains $c.RemotePort) {
+        if ($c.RemotePort -in $RiskyPorts) {
             Add-Result "Netzwerk" "WARN" "Verbindung zu sensiblem Port" `
                 "Local: $($c.LocalAddress):$($c.LocalPort) -> Remote: $($c.RemoteAddress):$($c.RemotePort)" `
                 "Nur prüfen. Nicht jede Verbindung ist gefährlich, aber sensible Ports verdienen Aufmerksamkeit."
@@ -329,12 +329,12 @@ $rows = foreach ($r in $Results) {
 
     @"
 <tr>
-  <td>$(HtmlEncode $r.Time)</td>
-  <td>$(HtmlEncode $r.Category)</td>
-  <td><span style="font-weight:700;color:$color;">$(HtmlEncode $r.Status)</span></td>
-  <td>$(HtmlEncode $r.Title)</td>
-  <td>$(HtmlEncode $r.Message)</td>
-  <td>$(HtmlEncode $r.Recommendation)</td>
+  <td>$(ConvertTo-HtmlEncodedString $r.Time)</td>
+  <td>$(ConvertTo-HtmlEncodedString $r.Category)</td>
+  <td><span style="font-weight:700;color:$color;">$(ConvertTo-HtmlEncodedString $r.Status)</span></td>
+  <td>$(ConvertTo-HtmlEncodedString $r.Title)</td>
+  <td>$(ConvertTo-HtmlEncodedString $r.Message)</td>
+  <td>$(ConvertTo-HtmlEncodedString $r.Recommendation)</td>
 </tr>
 "@
 }
@@ -359,10 +359,10 @@ $html = @"
   <div class="card">
     <h1>AVA COMMUNITY SECURITY CHECK v1</h1>
     <p class="muted">Lokal / Read-Only / Keine Angriffe / Keine Änderungen</p>
-    <p><strong>Zeit:</strong> $(HtmlEncode (Get-Date).ToString("yyyy-MM-dd HH:mm:ss"))</p>
-    <p><strong>Computer:</strong> $(HtmlEncode $env:COMPUTERNAME)</p>
-    <p><strong>Benutzer:</strong> $(HtmlEncode $env:USERNAME)</p>
-    <p class="score">Score: $Score / 100 - $(HtmlEncode $ScoreText)</p>
+    <p><strong>Zeit:</strong> $(ConvertTo-HtmlEncodedString (Get-Date).ToString("yyyy-MM-dd HH:mm:ss"))</p>
+    <p><strong>Computer:</strong> $(ConvertTo-HtmlEncodedString $env:COMPUTERNAME)</p>
+    <p><strong>Benutzer:</strong> $(ConvertTo-HtmlEncodedString $env:USERNAME)</p>
+    <p class="score">Score: $Score / 100 - $(ConvertTo-HtmlEncodedString $ScoreText)</p>
     <p><em>Leitsatz: Fakten vor Angst. Baseline vor Chaos. Sichtbarkeit vor Kontrolle.</em></p>
   </div>
 
