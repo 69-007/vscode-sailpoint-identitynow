@@ -22,11 +22,13 @@ $ReportTxt = Join-Path $OutDir "ava_community_security_report.txt"
 $ReportJson = Join-Path $OutDir "ava_community_security_report.json"
 $SuspiciousPowerShellFlags = @("-enc", "encodedcommand", "bypass", "downloadstring", "iex", "invoke-expression", "-nop", "hidden")
 $RiskyPorts = @(21, 23, 135, 139, 445, 3389, 5985, 5986) # FTP, Telnet, RPC, NetBIOS, SMB, RDP, WinRM HTTP, WinRM HTTPS
+$PowerShellMetaPropertyNames = @("PSPath", "PSParentPath", "PSChildName", "PSDrive", "PSProvider")
 $CriticalPenalty = 25
 $WarnPenalty = 7
 $ScoreVeryStableThreshold = 85
 $ScoreSolidThreshold = 65
 $ScoreNeedsImprovementThreshold = 40
+$MaxRecentHotfixes = 5
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
@@ -186,7 +188,7 @@ try {
         if (Test-Path $path) {
             $items = Get-ItemProperty $path
             $props = $items.PSObject.Properties | Where-Object {
-                $_.Name -notin @("PSPath", "PSParentPath", "PSChildName", "PSDrive", "PSProvider")
+                $_.Name -notin $PowerShellMetaPropertyNames
             }
 
             foreach ($prop in $props) {
@@ -210,24 +212,25 @@ try {
         $_.ProcessId -ne $PID
     }
 
-    foreach ($p in $procs) {
-        $cmd = "$($p.CommandLine)"
-        if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
-        $lower = $cmd.ToLowerInvariant()
-        $hits = @()
+    if ($procs) {
+        foreach ($p in $procs) {
+            $cmd = "$($p.CommandLine)"
+            if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
+            $lower = $cmd.ToLowerInvariant()
+            $hits = @()
 
-        foreach ($f in $SuspiciousPowerShellFlags) {
-            if ($lower.Contains($f)) { $hits += $f }
-        }
+            foreach ($f in $SuspiciousPowerShellFlags) {
+                if ($lower.Contains($f)) { $hits += $f }
+            }
 
-        if ($hits.Count -gt 0) {
-            Add-Result "Prozesse" "WARN" "Auffälliger PowerShell Prozess" `
-                "PID $($p.ProcessId) | Treffer: $($hits -join ', ') | $cmd" `
-                "Prüfen, ob dieser Prozess zu einem legitimen Admin-/Updatevorgang gehört."
+            if ($hits.Count -gt 0) {
+                Add-Result "Prozesse" "WARN" "Auffälliger PowerShell Prozess" `
+                    "PID $($p.ProcessId) | Treffer: $($hits -join ', ') | $cmd" `
+                    "Prüfen, ob dieser Prozess zu einem legitimen Admin-/Updatevorgang gehört."
+            }
         }
     }
-
-    if (-not $procs) {
+    else {
         Add-Result "Prozesse" "OK" "PowerShell Prozesse" "Keine weiteren PowerShell-Prozesse gefunden" "Gut."
     }
 }
@@ -264,7 +267,7 @@ try {
     $hotfixes = Get-HotFix | Sort-Object @{
         Expression = { if ($_.InstalledOn) { $_.InstalledOn } else { [datetime]::MinValue } }
         Descending = $true
-    } | Select-Object -First 5
+    } | Select-Object -First $MaxRecentHotfixes
     foreach ($h in $hotfixes) {
         $installedOnText = if ($h.InstalledOn) { $h.InstalledOn } else { "Unbekannt" }
         Add-Result "Updates" "INFO" "Installiertes Update" `
