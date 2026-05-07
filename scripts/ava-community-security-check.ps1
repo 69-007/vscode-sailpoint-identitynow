@@ -20,6 +20,10 @@ $OutDir = Join-Path ([Environment]::GetFolderPath("Desktop")) "AVA_COMMUNITY_SEC
 $ReportHtml = Join-Path $OutDir "ava_community_security_report.html"
 $ReportTxt = Join-Path $OutDir "ava_community_security_report.txt"
 $ReportJson = Join-Path $OutDir "ava_community_security_report.json"
+$SuspiciousPowerShellFlags = @("-enc", "encodedcommand", "bypass", "downloadstring", "iex", "invoke-expression", "-nop", "hidden")
+$RiskyPorts = @(21, 23, 135, 139, 445, 3389, 5985, 5986) # FTP, Telnet, RPC, NetBIOS, SMB, RDP, WinRM HTTP, WinRM HTTPS
+$CriticalPenalty = 25
+$WarnPenalty = 7
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
@@ -195,9 +199,8 @@ catch {
 # AUFFÄLLIGE POWERSHELL PROZESSE
 # =========================
 try {
-    $flags = @("-enc", "encodedcommand", "bypass", "downloadstring", "iex", "invoke-expression", "-nop", "hidden")
     $procs = Get-CimInstance Win32_Process | Where-Object {
-        $_.Name -in @("powershell.exe", "pwsh.exe")
+        $_.Name -in @("powershell.exe", "pwsh.exe") -and $_.ProcessId -ne $PID
     }
 
     foreach ($p in $procs) {
@@ -205,7 +208,7 @@ try {
         $lower = $cmd.ToLowerInvariant()
         $hits = @()
 
-        foreach ($f in $flags) {
+        foreach ($f in $SuspiciousPowerShellFlags) {
             if ($lower.Contains($f)) { $hits += $f }
         }
 
@@ -217,7 +220,7 @@ try {
     }
 
     if (-not $procs) {
-        Add-Result "Prozesse" "OK" "PowerShell Prozesse" "Keine laufenden PowerShell-Prozesse gefunden" "Gut."
+        Add-Result "Prozesse" "OK" "PowerShell Prozesse" "Keine weiteren PowerShell-Prozesse gefunden" "Gut."
     }
 }
 catch {
@@ -228,11 +231,10 @@ catch {
 # NETZWERK - NUR LOKAL, KEIN SCAN
 # =========================
 try {
-    $riskyPorts = @(21, 23, 135, 139, 445, 3389, 5985, 5986)
     $connections = Get-NetTCPConnection -State Established -ErrorAction Stop
 
     foreach ($c in $connections) {
-        if ($riskyPorts -contains $c.RemotePort) {
+        if ($RiskyPorts -contains $c.RemotePort) {
             Add-Result "Netzwerk" "WARN" "Verbindung zu sensiblem Port" `
                 "Local: $($c.LocalAddress):$($c.LocalPort) -> Remote: $($c.RemoteAddress):$($c.RemotePort)" `
                 "Nur prüfen. Nicht jede Verbindung ist gefährlich, aber sensible Ports verdienen Aufmerksamkeit."
@@ -268,7 +270,7 @@ catch {
 $critical = ($Results | Where-Object Status -eq "CRITICAL").Count
 $warn = ($Results | Where-Object Status -eq "WARN").Count
 
-$Score = 100 - ($critical * 25) - ($warn * 7)
+$Score = 100 - ($critical * $CriticalPenalty) - ($warn * $WarnPenalty)
 if ($Score -lt 0) { $Score = 0 }
 
 $ScoreText = if ($Score -ge 85) {
