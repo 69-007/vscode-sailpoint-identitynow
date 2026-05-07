@@ -205,12 +205,14 @@ catch {
 # AUFFÄLLIGE POWERSHELL PROZESSE
 # =========================
 try {
+    # $PID ist kein nutzbarer Wert in WMI-Filterstrings, daher Ausschluss des aktuellen Prozesses nachgelagert.
     $procs = Get-CimInstance Win32_Process -Filter "Name='powershell.exe' OR Name='pwsh.exe'" | Where-Object {
         $_.ProcessId -ne $PID
     }
 
     foreach ($p in $procs) {
         $cmd = "$($p.CommandLine)"
+        if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
         $lower = $cmd.ToLowerInvariant()
         $hits = @()
 
@@ -259,10 +261,14 @@ catch {
 # WINDOWS UPDATE HINWEIS
 # =========================
 try {
-    $hotfixes = Get-HotFix | Where-Object { $_.InstalledOn } | Sort-Object InstalledOn -Descending | Select-Object -First 5
+    $hotfixes = Get-HotFix | Sort-Object @{
+        Expression = { if ($_.InstalledOn) { $_.InstalledOn } else { [datetime]::MinValue } }
+        Descending = $true
+    } | Select-Object -First 5
     foreach ($h in $hotfixes) {
+        $installedOnText = if ($h.InstalledOn) { $h.InstalledOn } else { "Unbekannt" }
         Add-Result "Updates" "INFO" "Installiertes Update" `
-            "$($h.HotFixID) | Installiert am: $($h.InstalledOn)" `
+            "$($h.HotFixID) | Installiert am: $installedOnText" `
             "Updates regelmäßig prüfen."
     }
 }
@@ -362,7 +368,7 @@ $html = @"
     <p><strong>Zeit:</strong> $(ConvertTo-HtmlEncodedString (Get-Date).ToString("yyyy-MM-dd HH:mm:ss"))</p>
     <p><strong>Computer:</strong> $(ConvertTo-HtmlEncodedString $env:COMPUTERNAME)</p>
     <p><strong>Benutzer:</strong> $(ConvertTo-HtmlEncodedString $env:USERNAME)</p>
-    <p class="score">Score: $Score / 100 - $(ConvertTo-HtmlEncodedString $ScoreText)</p>
+    <p class="score">Score: $(ConvertTo-HtmlEncodedString "$Score") / 100 - $(ConvertTo-HtmlEncodedString $ScoreText)</p>
     <p><em>Leitsatz: Fakten vor Angst. Baseline vor Chaos. Sichtbarkeit vor Kontrolle.</em></p>
   </div>
 
