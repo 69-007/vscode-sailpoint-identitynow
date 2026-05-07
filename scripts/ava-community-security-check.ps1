@@ -24,6 +24,9 @@ $SuspiciousPowerShellFlags = @("-enc", "encodedcommand", "bypass", "downloadstri
 $RiskyPorts = @(21, 23, 135, 139, 445, 3389, 5985, 5986) # FTP, Telnet, RPC, NetBIOS, SMB, RDP, WinRM HTTP, WinRM HTTPS
 $CriticalPenalty = 25
 $WarnPenalty = 7
+$ScoreVeryStableThreshold = 85
+$ScoreSolidThreshold = 65
+$ScoreNeedsImprovementThreshold = 40
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
@@ -58,6 +61,7 @@ function HtmlEncode {
 # SYSTEMBASIS
 # =========================
 try {
+    $os = $null
     $os = Get-CimInstance Win32_OperatingSystem
     Add-Result "System" "INFO" "Betriebssystem" `
         "$($os.Caption) | Version: $($os.Version) | Build: $($os.BuildNumber)" `
@@ -68,10 +72,12 @@ catch {
 }
 
 try {
-    $uptime = (Get-Date) - $os.LastBootUpTime
-    Add-Result "System" "INFO" "Laufzeit seit Neustart" `
-        ("{0} Tage, {1} Stunden" -f [int]$uptime.TotalDays, $uptime.Hours) `
-        "Sehr lange Laufzeiten können Updates blockieren. Gelegentlich sauber neu starten."
+    if ($null -ne $os -and $os.LastBootUpTime) {
+        $uptime = (Get-Date) - $os.LastBootUpTime
+        Add-Result "System" "INFO" "Laufzeit seit Neustart" `
+            ("{0} Tage, {1} Stunden" -f [int]$uptime.TotalDays, $uptime.Hours) `
+            "Sehr lange Laufzeiten können Updates blockieren. Gelegentlich sauber neu starten."
+    }
 }
 catch {}
 
@@ -253,7 +259,7 @@ catch {
 # WINDOWS UPDATE HINWEIS
 # =========================
 try {
-    $hotfixes = Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 5
+    $hotfixes = Get-HotFix | Where-Object { $_.InstalledOn } | Sort-Object InstalledOn -Descending | Select-Object -First 5
     foreach ($h in $hotfixes) {
         Add-Result "Updates" "INFO" "Installiertes Update" `
             "$($h.HotFixID) | Installiert am: $($h.InstalledOn)" `
@@ -273,13 +279,13 @@ $warn = ($Results | Where-Object Status -eq "WARN").Count
 $Score = 100 - ($critical * $CriticalPenalty) - ($warn * $WarnPenalty)
 if ($Score -lt 0) { $Score = 0 }
 
-$ScoreText = if ($Score -ge 85) {
+$ScoreText = if ($Score -ge $ScoreVeryStableThreshold) {
     "Sehr stabil"
 }
-elseif ($Score -ge 65) {
+elseif ($Score -ge $ScoreSolidThreshold) {
     "Solide, aber prüfenswert"
 }
-elseif ($Score -ge 40) {
+elseif ($Score -ge $ScoreNeedsImprovementThreshold) {
     "Verbesserungsbedarf"
 }
 else {
