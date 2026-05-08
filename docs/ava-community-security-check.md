@@ -57,7 +57,8 @@ Use deterministic example input/output pairs to verify masking behavior after sc
 
 Recommended sample vectors:
 
-- `Authorization Bearer eyJhbGciOi...` → `Authorization <redacted>`
+- `Authorization eyJhbGciOi...` → `Authorization <redacted>`
+- `Bearer eyJhbGciOi...` → `Bearer <redacted>`
 - `https://alice:superSecret@server.local` → `https://<redacted>:<redacted>@server.local`
 - `Server=.;Password=MyPass123;Trusted_Connection=False;` → `Server=.;Password=<redacted>;Trusted_Connection=False;`
 - `token: "abcd-1234"` → `token=<redacted>`

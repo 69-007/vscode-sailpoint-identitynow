@@ -36,7 +36,6 @@ jobs:
 
           $syntaxErrors = @()
           foreach ($file in $files) {
-            $null = $null
             $tokens = $null
             $errors = $null
             $null = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
