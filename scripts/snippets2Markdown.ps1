@@ -6,12 +6,12 @@ param (
     $fileName
 )
 
-$snippets = gc .\snippets\transforms.json | ConvertFrom-Json
+$snippets = Get-Content -Path $fileName | ConvertFrom-Json
 
 
 Write-Output "| Trigger | Content |`n| --- | --- |"
 
-$snippets | gm -MemberType NoteProperty | ForEach-Object {
+$snippets | Get-Member -MemberType NoteProperty | ForEach-Object {
     $snippetName = $_.name
     $prefix = $snippets.$snippetName.prefix
 

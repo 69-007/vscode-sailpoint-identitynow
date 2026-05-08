@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 param(
     [string]$OutputDirectory,
     [switch]$SkipOpenReport
@@ -182,7 +182,9 @@ try {
             "Sehr lange Laufzeiten können Updates blockieren. Gelegentlich sauber neu starten."
     }
 }
-catch {}
+catch {
+    Add-Result "System" "INFO" "Laufzeit seit Neustart" "Laufzeit konnte nicht ermittelt werden" "Später erneut prüfen."
+}
 
 # =========================
 # DEFENDER / ANTIVIRUS
@@ -259,7 +261,9 @@ try {
         Add-Result "Remote Zugriff" "OK" "WinRM Dienst" "WinRM läuft nicht" "Für normale Clients meist sinnvoll."
     }
 }
-catch {}
+catch {
+    Add-Result "Remote Zugriff" "INFO" "WinRM Dienst" "Status konnte nicht gelesen werden" "Bei Bedarf manuell prüfen."
+}
 
 # =========================
 # LOKALE ADMINISTRATOREN
@@ -509,20 +513,20 @@ $html = @"
 
 $html | Out-File -FilePath $ReportHtml -Encoding UTF8
 
-Write-Host ""
-Write-Host "AVA COMMUNITY SECURITY CHECK abgeschlossen." -ForegroundColor Green
-Write-Host "Score: $Score / 100 - $ScoreText" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "HTML Report:" -ForegroundColor Cyan
-Write-Host $ReportHtml
-Write-Host ""
-Write-Host "TXT Report:" -ForegroundColor Cyan
-Write-Host $ReportTxt
-Write-Host ""
-Write-Host "JSON Report:" -ForegroundColor Cyan
-Write-Host $ReportJson
-Write-Host ""
-Write-Host "Leitsatz: Fakten vor Angst. Baseline vor Chaos. Sichtbarkeit vor Kontrolle." -ForegroundColor Green
+Write-Output ""
+Write-Output "AVA COMMUNITY SECURITY CHECK abgeschlossen."
+Write-Output "Score: $Score / 100 - $ScoreText"
+Write-Output ""
+Write-Output "HTML Report:"
+Write-Output $ReportHtml
+Write-Output ""
+Write-Output "TXT Report:"
+Write-Output $ReportTxt
+Write-Output ""
+Write-Output "JSON Report:"
+Write-Output $ReportJson
+Write-Output ""
+Write-Output "Leitsatz: Fakten vor Angst. Baseline vor Chaos. Sichtbarkeit vor Kontrolle."
 
 if (-not $SkipOpenReport) {
     try {
@@ -530,6 +534,6 @@ if (-not $SkipOpenReport) {
     }
     catch {
         $reportName = Split-Path -Path $ReportHtml -Leaf
-        Write-Host "Hinweis: HTML-Report '$reportName' konnte nicht automatisch geöffnet werden. Bitte manuell öffnen unter: $OutDir" -ForegroundColor Yellow
+        Write-Warning "Hinweis: HTML-Report '$reportName' konnte nicht automatisch geöffnet werden. Bitte manuell öffnen unter: $OutDir"
     }
 }
