@@ -26,6 +26,14 @@ The SailPoint Identity Security Cloud extension makes it easy to:
 - View, edit, create, delete applications
 - View, report, escalate, send reminders, reassign to access item owners or reassign based on a file, approve in bulk certification campaigns
 
+## Community utility: AVA Security Check
+
+The repository includes a community-maintained PowerShell utility for a **local, read-only** workstation security baseline check:
+
+- Script: `scripts/ava-community-security-check.ps1`
+- Runbook: `docs/ava-community-security-check.md`
+- Support model: community best-effort (not official SailPoint support)
+
 ## Installation
 
 Go to the extension menu or press `Ctrl`+`Shift`+`X` and look for the extension "Identity Security Cloud". Click on the button `Install`.

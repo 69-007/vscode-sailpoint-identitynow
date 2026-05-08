@@ -56,6 +56,44 @@ $ScoreSolidThreshold = 65
 $ScoreNeedsImprovementThreshold = 40
 $MaxRecentHotfixes = 5
 $SensitiveKeyPattern = '(password|passwd|pwd|token|api[_-]?key|client[_-]?secret)'
+$AvaUtilityOwner = "SailPoint Identity Security Cloud VS Code Community Maintainers"
+$AvaUtilityScope = "Lokaler, read-only Sicherheits-Basischeck auf dem eigenen System"
+$AvaUtilitySupportLevel = "Community-Support (Best-Effort, ohne offiziellen SailPoint Support)"
+
+# Zentral gepflegte Redaction-Regeln für report-relevante Textquellen.
+# Reihenfolge ist absichtlich: spezifischere Muster zuerst.
+$RedactionRules = @(
+    @{
+        Name = "Authorization Header / Bearer Token"
+        Pattern = '(?i)\b(authorization|bearer)\s+([A-Za-z0-9._~+/=-]+)'
+        Replacement = '$1 <redacted>'
+        Rationale = "Verhindert das Leaken von Access/Bearer Tokens."
+    },
+    @{
+        Name = "URI Credentials"
+        Pattern = '(?i)\b([a-z][a-z0-9+.\-]*://)([^/\s:@]+):([^@\s/]+)@'
+        Replacement = '$1<redacted>:<redacted>@'
+        Rationale = "Maskiert Benutzername/Passwort in Verbindungs-URIs."
+    },
+    @{
+        Name = "Connection String Password Segment"
+        Pattern = '(?i)\b(password|pwd)\s*=\s*([^;]+)'
+        Replacement = '$1=<redacted>'
+        Rationale = "Maskiert Passwort-Segmente in Semikolon-basierten Connection Strings."
+    },
+    @{
+        Name = "Quoted Secret Assignments"
+        Pattern = ("(?i)\b({0})\b\s*[:=]\s*(""[^""]*""|'[^']*')" -f $SensitiveKeyPattern)
+        Replacement = '$1=<redacted>'
+        Rationale = "Maskiert gequotete Secrets in key:value oder key=value Form."
+    },
+    @{
+        Name = "Unquoted Secret Assignments"
+        Pattern = ("(?i)\b({0})\b\s*[:=]\s*([^\s;,\)\]]+)" -f $SensitiveKeyPattern)
+        Replacement = '$1=<redacted>'
+        Rationale = "Maskiert ungequotete Secrets in key:value oder key=value Form."
+    }
+)
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
@@ -86,6 +124,10 @@ if ($script:UsesTempOutputFallback) {
         "Für sensible Umgebungen bitte -OutputDirectory auf einen geschützten Ordner setzen."
 }
 
+Add-Result "Utility" "INFO" "AVA Utility Support-Status" `
+    "Owner: $AvaUtilityOwner | Scope: $AvaUtilityScope | Support-Level: $AvaUtilitySupportLevel" `
+    "Für produktive Governance interne Prozesse/Dokumentation ergänzen."
+
 function ConvertTo-HtmlEncodedString {
     param([string]$Text)
     if ($null -eq $Text) { return "" }
@@ -97,11 +139,9 @@ function Hide-SensitiveText {
     if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
 
     $masked = $Text
-    $masked = $masked -replace '(?i)\b(authorization|bearer)\s+([A-Za-z0-9._~+/=\-]+)', '$1 <redacted>'
-    $masked = $masked -replace '(?i)\b([a-z][a-z0-9+.\-]*://)([^/\s:@]+):([^@\s/]+)@', '$1<redacted>:<redacted>@'
-    $masked = $masked -replace '(?i)\b(password|pwd)\s*=\s*([^;]+)', '$1=<redacted>'
-    $masked = $masked -replace ("(?i)\b({0})\b\s*[:=]\s*(""[^""]*""|'[^']*')" -f $SensitiveKeyPattern), '$1=<redacted>'
-    $masked = $masked -replace ("(?i)\b({0})\b\s*[:=]\s*([^\s;,\)\]]+)" -f $SensitiveKeyPattern), '$1=<redacted>'
+    foreach ($rule in $RedactionRules) {
+        $masked = $masked -replace $rule.Pattern, $rule.Replacement
+    }
     return $masked
 }
 

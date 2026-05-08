@@ -1,0 +1,68 @@
+name: PowerShell scripts
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/*.ps1'
+      - '.github/workflows/powershell-scripts.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/*.ps1'
+      - '.github/workflows/powershell-scripts.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-powershell-scripts:
+    name: Validate scripts/*.ps1 (optional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Path "$PWD/scripts" -Filter *.ps1 -File
+          if (-not $files) {
+            Write-Host "No PowerShell scripts found under scripts/."
+            exit 0
+          }
+
+          $syntaxErrors = @()
+          foreach ($file in $files) {
+            $null = $null
+            $tokens = $null
+            $errors = $null
+            $null = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -gt 0) {
+              $syntaxErrors += $errors
+            }
+          }
+
+          if ($syntaxErrors.Count -gt 0) {
+            $syntaxErrors | ForEach-Object { Write-Host "::error::$($_.Message) ($($_.Extent.File):$($_.Extent.StartLineNumber))" }
+            throw "PowerShell syntax validation failed."
+          }
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+
+      - name: Run PSScriptAnalyzer (best-practices)
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path "$PWD/scripts/*.ps1" -Severity Warning, Error
+          if ($results) {
+            $results | ForEach-Object {
+              Write-Host "::warning file=$($_.ScriptName),line=$($_.Line),col=$($_.Column)::$($_.RuleName): $($_.Message)"
+            }
+            throw "PSScriptAnalyzer reported findings."
+          }

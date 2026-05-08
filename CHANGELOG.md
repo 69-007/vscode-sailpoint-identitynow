@@ -8,10 +8,17 @@ This changelog is following the recommended format by [keepachangelog](https://k
 
 ### Security
 
+- Centralize AVA script redaction rules for sensitive values in startup/process text reporting
+
 ### Added
+
+- Add AVA community utility runbook (`docs/ava-community-security-check.md`) with owner/scope/support guidance and redaction regression examples
+- Add optional CI workflow to validate `scripts/*.ps1` syntax and run PowerShell best-practice checks
 
 ### Changed
 
+- Clarify AVA utility support status and scope in script output
+- AVA script supports `-OutputDirectory` and `-SkipOpenReport` options for safer/non-interactive usage
 ### Fixed
 
 ### Removed
