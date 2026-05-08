@@ -22,6 +22,7 @@ Optional:
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Continue"
+$script:UsesTempOutputFallback = $false
 
 function Get-ReportOutputDirectory {
     param([string]$RequestedDirectory)
@@ -35,6 +36,7 @@ function Get-ReportOutputDirectory {
         return $desktop
     }
 
+    $script:UsesTempOutputFallback = $true
     return [IO.Path]::GetTempPath()
 }
 
@@ -77,6 +79,12 @@ function Add-Result {
         })
 }
 
+if ($script:UsesTempOutputFallback) {
+    Add-Result "System" "WARN" "Unsicherer Standard-Ausgabeordner" `
+        "Desktop-Pfad nicht verfügbar; Reports werden im temporären Verzeichnis gespeichert: $OutDirBase" `
+        "Für sensible Umgebungen bitte -OutputDirectory auf einen geschützten Ordner setzen."
+}
+
 function ConvertTo-HtmlEncodedString {
     param([string]$Text)
     if ($null -eq $Text) { return "" }
@@ -89,8 +97,10 @@ function Hide-SensitiveText {
 
     $masked = $Text
     $masked = $masked -replace '(?i)\b(authorization|bearer)\s+([A-Za-z0-9\-._~+/]+=*)', '$1 <redacted>'
+    $masked = $masked -replace '(?i)\b([a-z][a-z0-9+.\-]*://)([^/\s:@]+):([^@\s/]+)@', '$1$2:<redacted>@'
+    $masked = $masked -replace '(?i)\b(password|pwd)\s*=\s*([^;]+)', '$1=<redacted>'
     $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*("[^"]*"|''[^'']*'')', '$1=<redacted>'
-    $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*([^\s;]+)', '$1=<redacted>'
+    $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*([^\s;,\)\]]+)', '$1=<redacted>'
     return $masked
 }
 
