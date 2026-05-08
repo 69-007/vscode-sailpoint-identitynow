@@ -6,7 +6,7 @@ param (
     $fileName
 )
 
-$snippets = Get-Content -Path $fileName -Raw | ConvertFrom-Json
+$snippets = Get-Content -Path $fileName | ConvertFrom-Json
 
 
 Write-Output "| Trigger | Content |`n| --- | --- |"
