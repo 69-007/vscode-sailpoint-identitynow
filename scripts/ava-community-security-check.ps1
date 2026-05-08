@@ -473,6 +473,7 @@ if (-not $SkipOpenReport) {
         Start-Process $ReportHtml -ErrorAction Stop
     }
     catch {
-        Write-Host "Hinweis: HTML-Report konnte nicht automatisch geöffnet werden: $ReportHtml ($($_.Exception.Message))" -ForegroundColor Yellow
+        $reportName = Split-Path -Path $ReportHtml -Leaf
+        Write-Host "Hinweis: HTML-Report '$reportName' konnte nicht automatisch geöffnet werden. $($_.Exception.Message)" -ForegroundColor Yellow
     }
 }
