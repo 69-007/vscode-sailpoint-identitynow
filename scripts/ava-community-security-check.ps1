@@ -83,13 +83,13 @@ function ConvertTo-HtmlEncodedString {
     return [System.Net.WebUtility]::HtmlEncode($Text)
 }
 
-function Mask-SensitiveText {
+function Hide-SensitiveText {
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
 
     $masked = $Text
     $masked = $masked -replace '(?i)\b(authorization|bearer)\s+([A-Za-z0-9\-._~+/]+=*)', '$1 <redacted>'
-    $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*(".*?"|\''.*?\'')', '$1=<redacted>'
+    $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*("[^"]*"|''[^'']*'')', '$1=<redacted>'
     $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*([^\s;]+)', '$1=<redacted>'
     return $masked
 }
@@ -234,7 +234,7 @@ try {
             }
 
             foreach ($prop in $props) {
-                $propValue = Mask-SensitiveText -Text "$($prop.Value)"
+                $propValue = Hide-SensitiveText -Text $prop.Value
                 Add-Result "Autostart" "INFO" "Autostart Eintrag" `
                     "$($prop.Name): $propValue" `
                     "Unbekannte Autostarts prüfen, aber nichts vorschnell löschen."
@@ -259,7 +259,7 @@ try {
         foreach ($p in $procs) {
             $cmd = "$($p.CommandLine)"
             if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
-            $safeCmd = Mask-SensitiveText -Text $cmd
+            $safeCmd = Hide-SensitiveText -Text $cmd
             $lower = $cmd.ToLowerInvariant()
             $hits = @()
 
@@ -463,6 +463,6 @@ if (-not $SkipOpenReport) {
         Start-Process $ReportHtml -ErrorAction Stop
     }
     catch {
-        Write-Host "Hinweis: HTML-Report konnte nicht automatisch geöffnet werden." -ForegroundColor Yellow
+        Write-Host "Hinweis: HTML-Report konnte nicht automatisch geöffnet werden: $ReportHtml ($($_.Exception.Message))" -ForegroundColor Yellow
     }
 }
