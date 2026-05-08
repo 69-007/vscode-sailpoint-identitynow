@@ -1,4 +1,8 @@
 #requires -Version 5.1
+param(
+    [string]$OutputDirectory,
+    [switch]$SkipOpenReport
+)
 <#
 AVA COMMUNITY SECURITY CHECK v1
 Ehrenamtlich / Respektvoll / Gesellschaftlich wertvoll
@@ -15,8 +19,24 @@ Ziel:
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Continue"
 
+function Get-ReportOutputDirectory {
+    param([string]$RequestedDirectory)
+
+    if (-not [string]::IsNullOrWhiteSpace($RequestedDirectory)) {
+        return $RequestedDirectory
+    }
+
+    $desktop = [Environment]::GetFolderPath("Desktop")
+    if (-not [string]::IsNullOrWhiteSpace($desktop) -and (Test-Path $desktop)) {
+        return $desktop
+    }
+
+    return [IO.Path]::GetTempPath()
+}
+
 $Now = Get-Date -Format "yyyyMMdd_HHmmss"
-$OutDir = Join-Path ([Environment]::GetFolderPath("Desktop")) "AVA_COMMUNITY_SECURITY_CHECK_$Now"
+$OutDirBase = Get-ReportOutputDirectory -RequestedDirectory $OutputDirectory
+$OutDir = Join-Path $OutDirBase "AVA_COMMUNITY_SECURITY_CHECK_$Now"
 $ReportHtml = Join-Path $OutDir "ava_community_security_report.html"
 $ReportTxt = Join-Path $OutDir "ava_community_security_report.txt"
 $ReportJson = Join-Path $OutDir "ava_community_security_report.json"
@@ -57,6 +77,17 @@ function ConvertTo-HtmlEncodedString {
     param([string]$Text)
     if ($null -eq $Text) { return "" }
     return [System.Net.WebUtility]::HtmlEncode($Text)
+}
+
+function Mask-SensitiveText {
+    param([string]$Text)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
+
+    $masked = $Text
+    $masked = $masked -replace '(?i)\b(authorization|bearer)\s+([A-Za-z0-9\-._~+/]+=*)', '$1 <redacted>'
+    $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*(".*?"|\''.*?\'')', '$1=<redacted>'
+    $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*([^\s;]+)', '$1=<redacted>'
+    return $masked
 }
 
 # =========================
@@ -199,8 +230,9 @@ try {
             }
 
             foreach ($prop in $props) {
+                $propValue = Mask-SensitiveText -Text "$($prop.Value)"
                 Add-Result "Autostart" "INFO" "Autostart Eintrag" `
-                    "$($prop.Name): $($prop.Value)" `
+                    "$($prop.Name): $propValue" `
                     "Unbekannte Autostarts prüfen, aber nichts vorschnell löschen."
             }
         }
@@ -223,6 +255,7 @@ try {
         foreach ($p in $procs) {
             $cmd = "$($p.CommandLine)"
             if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
+            $safeCmd = Mask-SensitiveText -Text $cmd
             $lower = $cmd.ToLowerInvariant()
             $hits = @()
 
@@ -232,7 +265,7 @@ try {
 
             if ($hits.Count -gt 0) {
                 Add-Result "Prozesse" "WARN" "Auffälliger PowerShell Prozess" `
-                    "PID $($p.ProcessId) | Treffer: $($hits -join ', ') | $cmd" `
+                    "PID $($p.ProcessId) | Treffer: $($hits -join ', ') | $safeCmd" `
                     "Prüfen, ob dieser Prozess zu einem legitimen Admin-/Updatevorgang gehört."
             }
         }
@@ -421,4 +454,11 @@ Write-Host $ReportJson
 Write-Host ""
 Write-Host "Leitsatz: Fakten vor Angst. Baseline vor Chaos. Sichtbarkeit vor Kontrolle." -ForegroundColor Green
 
-Start-Process $ReportHtml
+if (-not $SkipOpenReport) {
+    try {
+        Start-Process $ReportHtml -ErrorAction Stop
+    }
+    catch {
+        Write-Host "Hinweis: HTML-Report konnte nicht automatisch geöffnet werden." -ForegroundColor Yellow
+    }
+}
