@@ -22,6 +22,8 @@ Optional:
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Continue"
+# Script-scope flag is initialized once and then set by Get-ReportOutputDirectory
+# so later reporting logic can detect fallback usage without re-evaluating path state.
 $script:UsesTempOutputFallback = $false
 
 #
@@ -60,6 +62,8 @@ $ScoreVeryStableThreshold = 85
 $ScoreSolidThreshold = 65
 $ScoreNeedsImprovementThreshold = 40
 $MaxRecentHotfixes = 5
+# Shared keyword group used by redaction rules for quoted/unquoted secret assignments.
+# Updates here affect both corresponding rules in $RedactionRules below.
 $SensitiveKeyPattern = '(password|passwd|pwd|token|secret|api[_-]?key|apikey|auth|credential|client[_-]?secret|private[_-]?key|access[_-]?key)'
 $AvaUtilityOwner = "SailPoint Identity Security Cloud VS Code Community Maintainers"
 $AvaUtilityScope = "Lokaler, read-only Sicherheits-Basischeck auf dem eigenen System"
@@ -526,6 +530,6 @@ if (-not $SkipOpenReport) {
     }
     catch {
         $reportName = Split-Path -Path $ReportHtml -Leaf
-        Write-Host "Hinweis: HTML-Report '$reportName' konnte nicht automatisch geöffnet werden. Bitte Datei manuell öffnen." -ForegroundColor Yellow
+        Write-Host "Hinweis: HTML-Report '$reportName' konnte nicht automatisch geöffnet werden. Bitte manuell öffnen unter: $OutDir" -ForegroundColor Yellow
     }
 }

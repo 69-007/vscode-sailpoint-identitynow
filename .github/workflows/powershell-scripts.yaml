@@ -45,7 +45,7 @@ jobs:
           }
 
           if ($syntaxErrors.Count -gt 0) {
-            $syntaxErrors | ForEach-Object { Write-Host "::error::$($_.Message) ($($_.Extent.File):$($_.Extent.StartLineNumber))" }
+            $syntaxErrors | ForEach-Object { Write-Host "::error file=$($_.Extent.File),line=$($_.Extent.StartLineNumber)::$($_.Message)" }
             throw "PowerShell syntax validation failed."
           }
 
