@@ -51,6 +51,10 @@ Current rule categories:
 4. Quoted secret assignments (`token: "..."`, `api_key='...'`, etc.)
 5. Unquoted secret assignments (`token=abc`, `client-secret:xyz`, etc.)
 
+Current limitation:
+
+- Quoted-value regex redaction is intentionally lightweight and may not fully parse every escaped-quote edge case. If your environment uses heavily escaped secret strings, validate masking results with representative samples after changes.
+
 ## 7) Regression-test approach for redaction
 
 Use deterministic example input/output pairs to verify masking behavior after script updates.
