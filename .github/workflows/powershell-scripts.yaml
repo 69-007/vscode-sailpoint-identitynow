@@ -58,7 +58,14 @@ jobs:
       - name: Run PSScriptAnalyzer (best-practices)
         shell: pwsh
         run: |
-          $results = Invoke-ScriptAnalyzer -Path "$PWD/scripts/*.ps1" -Severity Warning, Error
+          $excludeRules = @(
+            'PSAvoidUsingWriteHost'
+            'PSUseApprovedVerbs'
+            'PSUseSingularNouns'
+            'PSUseShouldProcessForStateChangingFunctions'
+            'PSUseDeclaredVarsMoreThanAssignments'
+          )
+          $results = Invoke-ScriptAnalyzer -Path "$PWD/scripts/*.ps1" -Severity Warning, Error -ExcludeRule $excludeRules
           if ($results) {
             $results | ForEach-Object {
               Write-Host "::warning file=$($_.ScriptName),line=$($_.Line),col=$($_.Column)::$($_.RuleName): $($_.Message)"
