@@ -1,4 +1,8 @@
 #requires -Version 5.1
+param(
+    [string]$OutputDirectory,
+    [switch]$SkipOpenReport
+)
 <#
 AVA COMMUNITY SECURITY CHECK v1
 Ehrenamtlich / Respektvoll / Gesellschaftlich wertvoll
@@ -10,13 +14,42 @@ Ziel:
 - Verständlicher HTML-Report
 - Keine Daten an Dritte
 - Keine fremden Systeme scannen
+
+Optional:
+- -OutputDirectory "C:\Pfad\Reports" für benutzerdefinierten Ausgabeordner
+- -SkipOpenReport zum Deaktivieren des automatischen Öffnens des HTML-Reports
 #>
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Continue"
+# Script-scope flag is initialized once and then set by Get-ReportOutputDirectory
+# so later reporting logic can detect fallback usage without re-evaluating path state.
+$script:UsesTempOutputFallback = $false
+
+#
+# Resolves the report output base directory:
+# explicit parameter -> Desktop -> temp fallback.
+# Sets $script:UsesTempOutputFallback when temp is used.
+#
+function Get-ReportOutputDirectory {
+    param([string]$RequestedDirectory)
+
+    if (-not [string]::IsNullOrWhiteSpace($RequestedDirectory)) {
+        return $RequestedDirectory
+    }
+
+    $desktop = [Environment]::GetFolderPath("Desktop")
+    if (-not [string]::IsNullOrWhiteSpace($desktop) -and (Test-Path $desktop)) {
+        return $desktop
+    }
+
+    $script:UsesTempOutputFallback = $true
+    return [IO.Path]::GetTempPath()
+}
 
 $Now = Get-Date -Format "yyyyMMdd_HHmmss"
-$OutDir = Join-Path ([Environment]::GetFolderPath("Desktop")) "AVA_COMMUNITY_SECURITY_CHECK_$Now"
+$OutDirBase = Get-ReportOutputDirectory -RequestedDirectory $OutputDirectory
+$OutDir = Join-Path $OutDirBase "AVA_COMMUNITY_SECURITY_CHECK_$Now"
 $ReportHtml = Join-Path $OutDir "ava_community_security_report.html"
 $ReportTxt = Join-Path $OutDir "ava_community_security_report.txt"
 $ReportJson = Join-Path $OutDir "ava_community_security_report.json"
@@ -29,6 +62,47 @@ $ScoreVeryStableThreshold = 85
 $ScoreSolidThreshold = 65
 $ScoreNeedsImprovementThreshold = 40
 $MaxRecentHotfixes = 5
+# Shared keyword group used by redaction rules for quoted/unquoted secret assignments.
+# Updates here affect both corresponding rules in $RedactionRules below.
+$SensitiveKeyPattern = '(password|passwd|pwd|token|secret|api[_-]?key|apikey|auth|credential|client[_-]?secret|private[_-]?key|access[_-]?key)'
+$AvaUtilityOwner = "SailPoint Identity Security Cloud VS Code Community Maintainers"
+$AvaUtilityScope = "Lokaler, read-only Sicherheits-Basischeck auf dem eigenen System"
+$AvaUtilitySupportLevel = "Community-Support (Best-Effort, ohne offiziellen SailPoint Support)"
+
+# Zentral gepflegte Redaction-Regeln für report-relevante Textquellen.
+# Reihenfolge ist absichtlich: spezifischere Muster zuerst.
+$RedactionRules = @(
+    @{
+        Name = "Authorization Header / Bearer Token"
+        Pattern = '(?i)\b(authorization|bearer)\s+([A-Za-z0-9._~+/=-]+)'
+        Replacement = '$1 <redacted>'
+        Rationale = "Verhindert das Leaken von Access/Bearer Tokens."
+    },
+    @{
+        Name = "URI Credentials"
+        Pattern = '(?i)\b([a-z][a-z0-9+.\-]*://)([^/\s:@]+):([^@\s/]+)@'
+        Replacement = '$1<redacted>:<redacted>@'
+        Rationale = "Maskiert Benutzername/Passwort in Verbindungs-URIs."
+    },
+    @{
+        Name = "Connection String Password Segment"
+        Pattern = '(?i)\b(password|pwd)\s*=\s*([^;]+)'
+        Replacement = '$1=<redacted>'
+        Rationale = "Maskiert Passwort-Segmente in Semikolon-basierten Connection Strings."
+    },
+    @{
+        Name = "Quoted Secret Assignments"
+        Pattern = ("(?i)\b({0})\b\s*[:=]\s*(""[^""]*""|'[^']*')" -f $SensitiveKeyPattern)
+        Replacement = '$1=<redacted>'
+        Rationale = "Maskiert gequotete Secrets in key:value oder key=value Form."
+    },
+    @{
+        Name = "Unquoted Secret Assignments"
+        Pattern = ("(?i)\b({0})\b\s*[:=]\s*([^\s;,\)\]]+)" -f $SensitiveKeyPattern)
+        Replacement = '$1=<redacted>'
+        Rationale = "Maskiert ungequotete Secrets in key:value oder key=value Form."
+    }
+)
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
@@ -53,10 +127,37 @@ function Add-Result {
         })
 }
 
+if ($script:UsesTempOutputFallback) {
+    Add-Result "System" "WARN" "Unsicherer Standard-Ausgabeordner" `
+        "Desktop-Pfad nicht verfügbar; Reports werden im temporären Verzeichnis gespeichert: $OutDirBase" `
+        "Für sensible Umgebungen bitte -OutputDirectory auf einen geschützten Ordner setzen."
+}
+
+Add-Result "Utility" "INFO" "AVA Utility Support-Status" `
+    "Owner: $AvaUtilityOwner | Scope: $AvaUtilityScope | Support-Level: $AvaUtilitySupportLevel" `
+    "Für produktive Governance interne Prozesse/Dokumentation ergänzen."
+
+#
+# Encodes text for safe HTML rendering in the generated report.
+#
 function ConvertTo-HtmlEncodedString {
     param([string]$Text)
     if ($null -eq $Text) { return "" }
     return [System.Net.WebUtility]::HtmlEncode($Text)
+}
+
+#
+# Applies centralized redaction rules to mask sensitive values in free-text fields.
+#
+function Hide-SensitiveText {
+    param([string]$Text)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
+
+    $masked = $Text
+    foreach ($rule in $RedactionRules) {
+        $masked = $masked -replace $rule.Pattern, $rule.Replacement
+    }
+    return $masked
 }
 
 # =========================
@@ -199,8 +300,9 @@ try {
             }
 
             foreach ($prop in $props) {
+                $propValue = Hide-SensitiveText -Text $prop.Value
                 Add-Result "Autostart" "INFO" "Autostart Eintrag" `
-                    "$($prop.Name): $($prop.Value)" `
+                    "$($prop.Name): $propValue" `
                     "Unbekannte Autostarts prüfen, aber nichts vorschnell löschen."
             }
         }
@@ -223,6 +325,7 @@ try {
         foreach ($p in $procs) {
             $cmd = "$($p.CommandLine)"
             if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
+            $safeCmd = Hide-SensitiveText -Text $cmd
             $lower = $cmd.ToLowerInvariant()
             $hits = @()
 
@@ -232,7 +335,7 @@ try {
 
             if ($hits.Count -gt 0) {
                 Add-Result "Prozesse" "WARN" "Auffälliger PowerShell Prozess" `
-                    "PID $($p.ProcessId) | Treffer: $($hits -join ', ') | $cmd" `
+                    "PID $($p.ProcessId) | Treffer: $($hits -join ', ') | $safeCmd" `
                     "Prüfen, ob dieser Prozess zu einem legitimen Admin-/Updatevorgang gehört."
             }
         }
@@ -421,4 +524,12 @@ Write-Host $ReportJson
 Write-Host ""
 Write-Host "Leitsatz: Fakten vor Angst. Baseline vor Chaos. Sichtbarkeit vor Kontrolle." -ForegroundColor Green
 
-Start-Process $ReportHtml
+if (-not $SkipOpenReport) {
+    try {
+        Start-Process $ReportHtml -ErrorAction Stop
+    }
+    catch {
+        $reportName = Split-Path -Path $ReportHtml -Leaf
+        Write-Host "Hinweis: HTML-Report '$reportName' konnte nicht automatisch geöffnet werden. Bitte manuell öffnen unter: $OutDir" -ForegroundColor Yellow
+    }
+}
