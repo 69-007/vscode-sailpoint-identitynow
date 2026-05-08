@@ -21,6 +21,8 @@ This changelog is following the recommended format by [keepachangelog](https://k
 - AVA script supports `-OutputDirectory` and `-SkipOpenReport` options for safer/non-interactive usage
 ### Fixed
 
+- Reduce PowerShell CI noise by excluding naming and `ShouldProcess`-related PSScriptAnalyzer rules for `scripts/*.ps1`
+
 ### Removed
 
 ## [1.3.25] - 2026-02-20
