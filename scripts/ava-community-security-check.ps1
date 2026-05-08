@@ -14,6 +14,10 @@ Ziel:
 - Verständlicher HTML-Report
 - Keine Daten an Dritte
 - Keine fremden Systeme scannen
+
+Optional:
+- -OutputDirectory "C:\Pfad\Reports" für benutzerdefinierten Ausgabeordner
+- -SkipOpenReport zum Deaktivieren des automatischen Öffnens des HTML-Reports
 #>
 
 Set-StrictMode -Version Latest
