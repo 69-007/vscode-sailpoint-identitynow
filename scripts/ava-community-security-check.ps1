@@ -55,6 +55,7 @@ $ScoreVeryStableThreshold = 85
 $ScoreSolidThreshold = 65
 $ScoreNeedsImprovementThreshold = 40
 $MaxRecentHotfixes = 5
+$SensitiveKeyPattern = '(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)'
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
@@ -99,8 +100,8 @@ function Hide-SensitiveText {
     $masked = $masked -replace '(?i)\b(authorization|bearer)\s+([A-Za-z0-9\-._~+/]+=*)', '$1 <redacted>'
     $masked = $masked -replace '(?i)\b([a-z][a-z0-9+.\-]*://)([^/\s:@]+):([^@\s/]+)@', '$1$2:<redacted>@'
     $masked = $masked -replace '(?i)\b(password|pwd)\s*=\s*([^;]+)', '$1=<redacted>'
-    $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*("[^"]*"|''[^'']*'')', '$1=<redacted>'
-    $masked = $masked -replace '(?i)\b(password|passwd|pwd|token|api[-_]?key|client[-_]?secret)\b\s*[:=]\s*([^\s;,\)\]]+)', '$1=<redacted>'
+    $masked = $masked -replace ("(?i)\b{0}\b\s*[:=]\s*(""[^""]*""|'[^']*')" -f $SensitiveKeyPattern), '$1=<redacted>'
+    $masked = $masked -replace ("(?i)\b{0}\b\s*[:=]\s*([^\s;,\)\]]+)" -f $SensitiveKeyPattern), '$1=<redacted>'
     return $masked
 }
 
@@ -474,6 +475,6 @@ if (-not $SkipOpenReport) {
     }
     catch {
         $reportName = Split-Path -Path $ReportHtml -Leaf
-        Write-Host "Hinweis: HTML-Report '$reportName' konnte nicht automatisch geöffnet werden. $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "Hinweis: HTML-Report '$reportName' konnte nicht automatisch geöffnet werden. Bitte Datei manuell öffnen." -ForegroundColor Yellow
     }
 }
