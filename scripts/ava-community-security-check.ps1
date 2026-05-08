@@ -100,8 +100,8 @@ function Hide-SensitiveText {
     $masked = $masked -replace '(?i)\b(authorization|bearer)\s+([A-Za-z0-9._~+/\-]+=*)', '$1 <redacted>'
     $masked = $masked -replace '(?i)\b([a-z][a-z0-9+.\-]*://)([^/\s:@]+):([^@\s/]+)@', '$1$2:<redacted>@'
     $masked = $masked -replace '(?i)\b(password|pwd)\s*=\s*([^;]+)', '$1=<redacted>'
-    $masked = $masked -replace ("(?i)\b(?:{0})\b\s*[:=]\s*(""[^""]*""|'[^']*')" -f $SensitiveKeyPattern), '$1=<redacted>'
-    $masked = $masked -replace ("(?i)\b(?:{0})\b\s*[:=]\s*([^\s;,\)\]]+)" -f $SensitiveKeyPattern), '$1=<redacted>'
+    $masked = $masked -replace ("(?i)\b({0})\b\s*[:=]\s*(""[^""]*""|'[^']*')" -f $SensitiveKeyPattern), '$1=<redacted>'
+    $masked = $masked -replace ("(?i)\b({0})\b\s*[:=]\s*([^\s;,\)\]]+)" -f $SensitiveKeyPattern), '$1=<redacted>'
     return $masked
 }
 
