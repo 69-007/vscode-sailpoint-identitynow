@@ -24,6 +24,11 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Continue"
 $script:UsesTempOutputFallback = $false
 
+#
+# Resolves the report output base directory:
+# explicit parameter -> Desktop -> temp fallback.
+# Sets $script:UsesTempOutputFallback when temp is used.
+#
 function Get-ReportOutputDirectory {
     param([string]$RequestedDirectory)
 
@@ -128,12 +133,18 @@ Add-Result "Utility" "INFO" "AVA Utility Support-Status" `
     "Owner: $AvaUtilityOwner | Scope: $AvaUtilityScope | Support-Level: $AvaUtilitySupportLevel" `
     "Für produktive Governance interne Prozesse/Dokumentation ergänzen."
 
+#
+# Encodes text for safe HTML rendering in the generated report.
+#
 function ConvertTo-HtmlEncodedString {
     param([string]$Text)
     if ($null -eq $Text) { return "" }
     return [System.Net.WebUtility]::HtmlEncode($Text)
 }
 
+#
+# Applies centralized redaction rules to mask sensitive values in free-text fields.
+#
 function Hide-SensitiveText {
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
