@@ -1,4 +1,4 @@
-import type { TestFn } from 'ava';
+import type { ExecutionContext, TestFn } from 'ava';
 
 const avaModule = require('ava') as { default?: TestFn };
 const avaTest = avaModule.default as TestFn;
@@ -23,14 +23,13 @@ export function describe(_name: string, callback: () => unknown): void {
 	}
 }
 
-export function it(name: string, callback: () => unknown): void {
+export function it(name: string, callback: (t: ExecutionContext) => unknown): void {
 	const baseTitle = contextStack.length > 0 ? `${contextStack.join(' › ')} › ${name}` : name;
 	const count = (testTitleCount.get(baseTitle) ?? 0) + 1;
 	testTitleCount.set(baseTitle, count);
 	const testTitle = count > 1 ? `${baseTitle} [${count}]` : baseTitle;
 
 	avaTest(testTitle, async (t) => {
-		await callback();
-		t.pass();
+		await t.notThrowsAsync(async () => callback(t));
 	});
 }
