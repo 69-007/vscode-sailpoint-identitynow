@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { it, describe } from 'mocha';
+import { it, describe, suite } from '../ava-bdd';
 import path = require('node:path');
 import { CSVReader } from '../../services/CSVReader';
 import * as assert from 'assert';

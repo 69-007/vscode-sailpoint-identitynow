@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { it, describe, suite } from 'mocha';
+import { it, describe, suite } from '../ava-bdd';
 import { RoleCriteriaLevel1 } from 'sailpoint-api-client';
 import { CacheService } from '../../services/cache/CacheService';
 import {  roleMembershipSelectorToStringConverter } from '../../parser/roleMembershipSelectorToStringConverter';

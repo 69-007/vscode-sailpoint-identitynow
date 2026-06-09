@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { it, describe, suite } from 'mocha';
+import { it, describe, suite } from '../ava-bdd';
 import { StringIterator } from '../../parser/stringIterator';
 
 

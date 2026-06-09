@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { it, describe } from 'mocha';
+import { it, describe, suite } from '../ava-bdd';
 import { titleCase } from '../../utils/titleCase';
 
 // You can import and use all API from the 'vscode' module

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as os from 'os';
-import { it, describe } from 'mocha';
+import { it, describe, suite } from '../ava-bdd';
 import * as path from 'path'
 import { CSVWriter } from '../../services/CSVWriter';
 

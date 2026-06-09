@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { it, describe } from 'mocha';
+import { it, describe, suite } from '../ava-bdd';
 
 import { EndpointUtils } from '../../utils/EndpointUtils';
 // import * as myExtension from '../../extension';
