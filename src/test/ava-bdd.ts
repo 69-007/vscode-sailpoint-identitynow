@@ -5,10 +5,19 @@ const avaTest = avaModule.default as TestFn;
 const contextStack: string[] = [];
 const testTitleCount = new Map<string, number>();
 
+function runBlock(callback: () => unknown): void {
+	const maybePromise = callback();
+	if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+		(maybePromise as Promise<unknown>).catch((error: unknown) => {
+			throw error;
+		});
+	}
+}
+
 export function suite(name: string, callback: () => unknown): void {
 	contextStack.push(name);
 	try {
-		void callback();
+		runBlock(callback);
 	} finally {
 		contextStack.pop();
 	}
@@ -17,7 +26,7 @@ export function suite(name: string, callback: () => unknown): void {
 export function describe(name: string, callback: () => unknown): void {
 	contextStack.push(name);
 	try {
-		void callback();
+		runBlock(callback);
 	} finally {
 		contextStack.pop();
 	}
