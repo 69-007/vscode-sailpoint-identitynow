@@ -1833,8 +1833,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
-    "test:unit": "npm run compile && mocha -u tdd ./out/test/unit/*.test.js",
+    "test": "npm run compile && ava",
+    "test:unit": "npm run compile && ava \"out/test/unit/*.test.js\"",
     "clean": "rimraf out",
     "postinstall": "cd src/campaign-webview/app && npm install"
   },
@@ -1845,7 +1845,6 @@
   "devDependencies": {
     "@types/glob": "^9.0.0",
     "@types/lodash": "^4.14.191",
-    "@types/mocha": "^10.0.10",
     "@types/node": "^18.19.64",
     "@types/tmp": "^0.2.5",
     "@types/vscode": "^1.74.0",
@@ -1855,9 +1854,9 @@
     "esbuild": "^0.27.3",
     "eslint": "^10.0.1",
     "glob": "^13.0.6",
-    "mocha": "^11.7.5",
     "rimraf": "^6.1.3",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "ava": "^8.0.1"
   },
   "dependencies": {
     "@json2csv/node": "^7.0.6",
@@ -1871,5 +1870,13 @@
     "sailpoint-api-client": "^1.7.10",
     "tmp": "^0.2.1",
     "vscode-sailpoint-identitynow": "file:"
+  },
+  "ava": {
+    "files": [
+      "out/test/**/*.test.js"
+    ],
+    "require": [
+      "./out/test/setup/registerVscodeStub.js"
+    ]
   }
 }

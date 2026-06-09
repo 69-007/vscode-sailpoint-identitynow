@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { it, describe, suite } from 'mocha';
+import { it, describe, suite } from '../ava-bdd';
 import { Parser } from '../../parser/parser';
 import { Attribute, ComparisonOperator, Expression, Literal } from '../../parser/ast';
 import { RoleCriteriaLevel1 } from 'sailpoint-api-client';
