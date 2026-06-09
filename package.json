@@ -1877,6 +1877,7 @@
     ],
     "require": [
       "./out/test/setup/registerVscodeStub.js"
-    ]
+    ],
+    "failWithoutAssertions": false
   }
 }

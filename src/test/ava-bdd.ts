@@ -5,8 +5,8 @@ const avaTest = avaModule.default as TestFn;
 const contextStack: string[] = [];
 const testTitleCount = new Map<string, number>();
 
-export function suite(_name: string, callback: () => unknown): void {
-	contextStack.push(_name);
+export function suite(name: string, callback: () => unknown): void {
+	contextStack.push(name);
 	try {
 		void callback();
 	} finally {
@@ -14,8 +14,8 @@ export function suite(_name: string, callback: () => unknown): void {
 	}
 }
 
-export function describe(_name: string, callback: () => unknown): void {
-	contextStack.push(_name);
+export function describe(name: string, callback: () => unknown): void {
+	contextStack.push(name);
 	try {
 		void callback();
 	} finally {
@@ -30,6 +30,6 @@ export function it(name: string, callback: (t: ExecutionContext) => unknown): vo
 	const testTitle = count > 1 ? `${baseTitle} [${count}]` : baseTitle;
 
 	avaTest(testTitle, async (t) => {
-		await t.notThrowsAsync(async () => callback(t));
+		await callback(t);
 	});
 }

@@ -19,11 +19,31 @@ Funktionen:
 - HTML Security Dashboard
 #>
 
+param(
+    [string]$OutputDirectory
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Continue"
 
+function Get-OutputBaseDirectory {
+    param([string]$RequestedDirectory)
+
+    if (-not [string]::IsNullOrWhiteSpace($RequestedDirectory)) {
+        return $RequestedDirectory
+    }
+
+    $desktop = [Environment]::GetFolderPath("Desktop")
+    if (-not [string]::IsNullOrWhiteSpace($desktop) -and (Test-Path -LiteralPath $desktop)) {
+        return $desktop
+    }
+
+    return [IO.Path]::GetTempPath()
+}
+
 $Now = Get-Date -Format "yyyyMMdd_HHmmss"
-$Root = Join-Path $env:USERPROFILE "Desktop\AVA_SOC_PORTAL_V6_SAFE"
+$OutBase = Get-OutputBaseDirectory -RequestedDirectory $OutputDirectory
+$Root = Join-Path $OutBase "AVA_SOC_PORTAL_V6_SAFE"
 $LogDir = Join-Path $Root "Logs"
 $StateDir = Join-Path $Root "State"
 $ReportDir = Join-Path $Root "Reports"

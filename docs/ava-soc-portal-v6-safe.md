@@ -13,10 +13,15 @@
 
 ```powershell
 .\scripts\ava-soc-portal-v6-safe.ps1
+
+# Optional eigener Basisordner
+.\scripts\ava-soc-portal-v6-safe.ps1 -OutputDirectory "C:\Security\AVA"
 ```
 
 ## Ausgabeorte
 
-- `Desktop\AVA_SOC_PORTAL_V6_SAFE\Reports\snapshot_latest.json`
-- `Desktop\AVA_SOC_PORTAL_V6_SAFE\Reports\analysis_latest.json`
-- `Desktop\AVA_SOC_PORTAL_V6_SAFE\Reports\ava_soc_portal_v6_safe.html`
+- `<OutputBase>\AVA_SOC_PORTAL_V6_SAFE\Reports\snapshot_latest.json`
+- `<OutputBase>\AVA_SOC_PORTAL_V6_SAFE\Reports\analysis_latest.json`
+- `<OutputBase>\AVA_SOC_PORTAL_V6_SAFE\Reports\ava_soc_portal_v6_safe.html`
+
+`<OutputBase>` ist `-OutputDirectory`, sonst Desktop (mit Temp-Fallback wenn Desktop nicht verfügbar ist).
