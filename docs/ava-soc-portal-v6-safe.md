@@ -1,6 +1,6 @@
 # AVA SOC PORTAL V6 SAFE
 
-`/tmp/workspace/69-007/vscode-sailpoint-identitynow/scripts/ava-soc-portal-v6-safe.ps1`
+`scripts/ava-soc-portal-v6-safe.ps1`
 
 ## Eigenschaften
 
